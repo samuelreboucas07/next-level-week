@@ -14,3 +14,6 @@ app.use(routes);
 app.use('/uploads', express.static(path.resolve(__dirname, '..', 'uploads'))) //Função usada para acessar arquivos estáticos (pdf, img, word,....)
 
 app.listen(3333)
+
+// Pesquisar Service Pattern 
+// Pesquisar Data mapper

@@ -5,5 +5,6 @@ const routes = express.Router();
 
 routes.get('/items', ItemsController.getItems)
 routes.post('/points', PointsController.createPoint);
+routes.get('/points/:id', PointsController.show);
 
 export default routes;
