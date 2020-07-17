@@ -8,7 +8,7 @@ class PointsController {
         const trx = await knex.transaction(); // Responsável por fazer o rollback dos inserts, descarta o que foi feito caso dê algum erro.
 
         const point  = {
-            image: 'image-fake', 
+            image: 'https://images.unsplash.com/photo-1556767576-5ec41e3239ea?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=400&q=60', 
             name, 
             email, 
             whatsapp, 
@@ -41,14 +41,32 @@ class PointsController {
     if(!point){
         return res.status(400).json({message: 'Point not found.'})
     }
+        
         const items = await knex('items')
-            .join('point_items', 'items.id', '=', 'point_items.item_id')
-            .where('point_items.point_id', id)
-            .select('items.title');
+                    .join('point_items', 'items.id', '=', 'point_items.item_id')
+                    .where('point_items.point_id', id)
+                    .select('items.title');
 
         return  res.json({point, items});
     }
 
+    async index(req: Request, res: Response){
+        //Cidade, uf, items
+        const {city, uf, items} = req.query;
+        const parsedItems = String(items)
+            .split(',')
+            .map(item => Number(item.trim()))
+
+            const points = await knex('points')
+                .join('point_items', 'points.id', '=', 'point_items.point_id')
+                .whereIn('point_items.item_id', parsedItems) //Busca item que está dentro do array.
+                .where('city', String(city))    
+                .where('uf', String(uf))
+                .distinct()
+                .select('points.*')
+
+        res.json({points})
+    }
 
 }
 
