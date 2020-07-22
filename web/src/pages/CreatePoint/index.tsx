@@ -1,10 +1,67 @@
-import React from 'react';
+import React, {useEffect, useState, ChangeEvent} from 'react';
 import logo from './../../assets/logo.svg';
 import { Link } from 'react-router-dom';
 import { FiArrowLeft} from 'react-icons/fi';
+import { Map, TileLayer, Marker } from 'react-leaflet';
 import './styles.css';
+import api from './../../services/api';
+import axios from 'axios';
 
+//Representação do formato
+interface Item {
+    id: number;
+    name: string;
+    image_url: string;
+}
+
+interface IBGEUFResponse {
+    sigla: string;
+}
+
+interface IBGECityResponse {
+    nome: string;
+}
 const CreatePoint = () => {
+
+    //Sempre que criar estado para array ou objeto é necessário informar manualmente o tipo da variável armazenada.
+    const [items, setItems] = useState<Item[]>([]);
+    const [ufs, setUfs] = useState<string[]>([]);
+    const [cities, setCities] = useState<string[]>([]); 
+
+    const [selectedUf, setSelectedUf] = useState<string>('0');
+    const [selectedCity, setSelectedCity] = useState<string>('0');
+
+    useEffect(() => {
+        api.get('items').then(response => {
+            setItems(response.data);
+        });
+    }, [])
+
+    useEffect(() => {
+        axios.get<IBGEUFResponse[]>('https://servicodados.ibge.gov.br/api/v1/localidades/estados').then( response => {
+            const ufInitials = response.data.map( uf => uf.sigla);
+            setUfs(ufInitials);
+        })
+    }, [])
+
+    useEffect(() => {
+        if(selectedUf === '0'){
+            return;
+        }
+        axios.get<IBGECityResponse[]>(`https://servicodados.ibge.gov.br/api/v1/localidades/estados/${selectedUf}/municipios`).then( response => {
+            const cityNames = response.data.map(city => city.nome);
+            setCities(cityNames);
+        })
+    }, [selectedUf])
+    
+    function handleSelectUf(event: ChangeEvent<HTMLSelectElement>){
+        setSelectedUf(event.target.value);
+    }
+
+    function handleSelectCity(event: ChangeEvent<HTMLSelectElement>){
+        setSelectedUf(event.target.value);
+    }
+
     return (
         <div id="page-create-point">
             <header>
@@ -52,17 +109,33 @@ const CreatePoint = () => {
                         <h2>Endereço</h2>
                         <span>Selecione um endereço no mapa</span>
                     </legend>
+
+                    <Map center={[-13.3655212, -39.081492]} zoom={15}>
+                        <TileLayer 
+                            attribution='&amp;copy <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
+                            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                        />
+                        <Marker position={[-13.3655212, -39.081492]}/>
+                    </Map>
+
+
                     <div className="field-group">
                         <div className="field">
                             <label htmlFor="uf">Estado (UF)</label>
-                            <select name="uf" id="uf">
-                                <option value="0">Selecione um Estado</option>
+                            <select name="uf" id="uf" value={selectedUf} onChange={handleSelectUf}>
+                                <option value="0">Selecione um estado</option>
+                                {ufs.map(uf => (
+                                    <option key={uf} value={uf}>{uf}</option>
+                                ))}
                             </select>
                         </div>
                         <div className="field">
                             <label htmlFor="city">Cidade</label>
-                            <select name="city" id="city">
-                                <option value="0">Selecione uma Cidade</option>
+                            <select name="city" id="city" value={selectedCity} onChange={handleSelectCity}>
+                                <option value="0">Selecione uma cidade</option>
+                                {cities.map(city => (
+                                    <option key={city} value={city}>{city}</option>
+                                ))}
                             </select>
                         </div>
                     </div>
@@ -73,33 +146,15 @@ const CreatePoint = () => {
                         <span>Selecione um ou mais ítens abaixo</span>
                     </legend>
                     <ul className="items-grid">
-                        <li>
-                            <img src="http://localhost:3333/uploads/oleo.svg" alt="teste"/>
-                            <span>Óleo de cozinha</span>
-                        </li>
-                        <li>
-                            <img src="http://localhost:3333/uploads/oleo.svg" alt="teste"/>
-                            <span>Óleo de cozinha</span>
-                        </li>
-                        <li>
-                            <img src="http://localhost:3333/uploads/oleo.svg" alt="teste"/>
-                            <span>Óleo de cozinha</span>
-                        </li>
-                        <li>
-                            <img src="http://localhost:3333/uploads/oleo.svg" alt="teste"/>
-                            <span>Óleo de cozinha</span>
-                        </li>
-                        <li>
-                            <img src="http://localhost:3333/uploads/oleo.svg" alt="teste"/>
-                            <span>Óleo de cozinha</span>
-                        </li>
-                        <li>
-                            <img src="http://localhost:3333/uploads/oleo.svg" alt="teste"/>
-                            <span>Óleo de cozinha</span>
-                        </li>
-                        
+                        {items.map((item) => (
+                            <li key={item.id}>
+                                <img src={item.image_url} alt={item.name}/>
+                                <span>{item.name}</span>
+                            </li>
+                        ))}
                     </ul>
                 </fieldset>
+                <button type="submit">Cadastrar ponto de coleta</button>
             </form>
         </div>
     );
