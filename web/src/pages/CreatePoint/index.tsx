@@ -6,7 +6,7 @@ import { Map, TileLayer, Marker } from 'react-leaflet';
 import './styles.css';
 import api from './../../services/api';
 import axios from 'axios';
-
+import {LeafletMouseEvent} from 'leaflet';
 //Representação do formato
 interface Item {
     id: number;
@@ -27,9 +27,19 @@ const CreatePoint = () => {
     const [items, setItems] = useState<Item[]>([]);
     const [ufs, setUfs] = useState<string[]>([]);
     const [cities, setCities] = useState<string[]>([]); 
+    
+    const [initialPosition, setInitialPosition] = useState<[number, number]>([0, 0]);
 
     const [selectedUf, setSelectedUf] = useState<string>('0');
     const [selectedCity, setSelectedCity] = useState<string>('0');
+    const [selectedPosition, setSelectedPosition] = useState<[number, number]>([0, 0]);
+
+    useEffect(() => {
+        navigator.geolocation.getCurrentPosition(position => {
+            setInitialPosition([position.coords.latitude, position.coords.longitude])
+            // console.log(position);
+        });
+    }, [])
 
     useEffect(() => {
         api.get('items').then(response => {
@@ -60,6 +70,10 @@ const CreatePoint = () => {
 
     function handleSelectCity(event: ChangeEvent<HTMLSelectElement>){
         setSelectedUf(event.target.value);
+    }
+
+    function handleMapClick(event: LeafletMouseEvent){
+        setSelectedPosition([event.latlng.lat, event.latlng.lng])
     }
 
     return (
@@ -110,12 +124,12 @@ const CreatePoint = () => {
                         <span>Selecione um endereço no mapa</span>
                     </legend>
 
-                    <Map center={[-13.3655212, -39.081492]} zoom={15}>
+                    <Map center={initialPosition} zoom={15} onClick={handleMapClick}>
                         <TileLayer 
                             attribution='&amp;copy <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
                             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                         />
-                        <Marker position={[-13.3655212, -39.081492]}/>
+                        <Marker position={selectedPosition}/>
                     </Map>
 
 
